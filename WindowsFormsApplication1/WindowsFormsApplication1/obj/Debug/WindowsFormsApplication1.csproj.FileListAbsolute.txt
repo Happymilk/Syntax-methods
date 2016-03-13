@@ -1,0 +1,9 @@
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe.config
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.csprojResolveAssemblyReference.cache
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.Form1.resources
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.Properties.Resources.resources
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.csproj.GenerateResource.Cache
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.exe
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\bin\Debug\WindowsFormsApplication1.pdb
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.exe
+D:\Drive\учёба\3 курс\2 сем\МиАПР\7\WindowsFormsApplication1\WindowsFormsApplication1\obj\Debug\WindowsFormsApplication1.pdb
