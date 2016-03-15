@@ -11,87 +11,82 @@ namespace WindowsFormsApplication1
 {
     public class Line
     {
-        public Line(Point from, Point to)
+        public Line(Point start, Point finish)
         {
-            From = from;
-            To = to;
+            Start = start;
+            Finish = finish;
         }
 
-        public Point From { get; set; }
-        public Point To { get; set; }
+        public Point Start { get; set; }
+        public Point Finish { get; set; }
 
-        public void ScaleTransform(double xScale, double yScale, Point centerPoint)
+        public void Scale(double xScale, double yScale, Point centerPoint)
         {
-            Vector length = To - From;
-            Vector startDelta = From - centerPoint;
+            Vector length = Finish - Start;
+            Vector startDelta = Start - centerPoint;
 
             startDelta.X *= xScale;
             startDelta.Y *= yScale;
-            From = centerPoint + startDelta;
+            Start = centerPoint + startDelta;
             length.X *= xScale;
             length.Y *= yScale;
-            To = From + length;
+            Finish = Start + length;
         }
-
-        public void ShiftTransform(double xDelta, double yDelta)
+        public void Shift(double xDelta, double yDelta)
         {
             var shift = new Vector(xDelta, yDelta);
 
-            To += shift;
-            From += shift;
+            Finish += shift;
+            Start += shift;
         }
     }
 
-    public class ElementType
+    public class Type
     {
-        public ElementType(string name) { Name = name; }
+        public Type(string name) { Name = name; }
         public String Name { get; private set; }
     }
 
-    internal class TerminalElementType : ElementType
+    internal class TypeOfObjects : Type
     {
         private readonly Line standartElementLine;
 
-        public TerminalElementType(string name, Line standartElementLine)
-            : base(name)
+        public TypeOfObjects(string name, Line standartElementLine) : base(name)
         {
             this.standartElementLine = standartElementLine;
         }
 
-        public Element StandartElement
+        public Objects Default
         {
-            get { return new Element(this, new Line(new Point(standartElementLine.From.X, standartElementLine.From.Y), new Point(standartElementLine.To.X, standartElementLine.To.Y))); }
+            get { return new Objects(this, new Line(new Point(standartElementLine.Start.X, standartElementLine.Start.Y), new Point(standartElementLine.Finish.X, standartElementLine.Finish.Y))); }
         }
     }
 
-    public class Element
+    public class Objects
     {
-        public Element(ElementType elementType)
+        public Objects(Type type)
         {
-            ElementType = elementType;
+            Type = type;
             Lines = new List<Line>();
         }
-
-        public Element(ElementType elementType, Line line)
+        public Objects(Type type, Line line)
         {
-            ElementType = elementType;
+            Type = type;
             Lines = new List<Line> { line };
-            StartPosition = new Point(Math.Min(line.From.X, line.To.X),
-                Math.Max(line.From.Y, line.To.Y));
-            EndPosition = new Point(Math.Max(line.From.X, line.To.X),
-                Math.Min(line.From.Y, line.To.Y));
+            StartPosition = new Point(Math.Min(line.Start.X, line.Finish.X),
+                Math.Max(line.Start.Y, line.Finish.Y));
+            EndPosition = new Point(Math.Max(line.Start.X, line.Finish.X),
+                Math.Min(line.Start.Y, line.Finish.Y));
         }
-
-        public Element(ElementType elementType, IEnumerable<Line> lines, 
-            Point startPoint, Point endPoint)
+        public Objects(Type type, IEnumerable<Line> lines, Point startPoint, Point endPoint)
         {
             StartPosition = startPoint;
             EndPosition = endPoint;
-            ElementType = elementType;
+            Type = type;
             Lines = lines;
         }
 
-        public ElementType ElementType { get; private set; }
+        public Type Type { get; private set; }
         public Point StartPosition { get; set; }
         public Point EndPosition { get; set; }
         public IEnumerable<Line> Lines { get; private set; }
@@ -106,7 +101,7 @@ namespace WindowsFormsApplication1
             get { return Math.Abs(EndPosition.Y - StartPosition.Y); }
         }
 
-        public void ScaleTransform(double xScale, double yScale)
+        public void Scale(double xScale, double yScale)
         {
             Vector delta = EndPosition - StartPosition;
             
@@ -115,10 +110,9 @@ namespace WindowsFormsApplication1
             EndPosition = StartPosition + delta;
             
             foreach (Line line in Lines)
-                line.ScaleTransform(xScale, yScale, StartPosition);
+                line.Scale(xScale, yScale, StartPosition);
         }
-
-        public void ShiftTransform(double xDelta, double yDelta)
+        public void Shift(double xDelta, double yDelta)
         {
             var shift = new Vector(xDelta, yDelta);
             
@@ -126,17 +120,17 @@ namespace WindowsFormsApplication1
             EndPosition += shift;
             
             foreach (Line line in Lines)
-                line.ShiftTransform(xDelta, yDelta);
+                line.Shift(xDelta, yDelta);
         }
 
-        public void GetGeometryGroup(Graphics g)
+        public void Draw(Graphics g)
         {
             var pen = new Pen(Color.Black);
 
             foreach (Line line in Lines)
             {
-                var from = new System.Drawing.Point(Convert.ToInt32(GetScreenPoint(line.From).X), Convert.ToInt32(GetScreenPoint(line.From).Y));
-                var to = new System.Drawing.Point(Convert.ToInt32(GetScreenPoint(line.To).X), Convert.ToInt32(GetScreenPoint(line.To).Y));
+                var from = new System.Drawing.Point(Convert.ToInt32(GetScreenPoint(line.Start).X), Convert.ToInt32(GetScreenPoint(line.Start).Y));
+                var to = new System.Drawing.Point(Convert.ToInt32(GetScreenPoint(line.Finish).X), Convert.ToInt32(GetScreenPoint(line.Finish).Y));
                 g.DrawLine(pen, from, to);
             }
         }
@@ -147,166 +141,9 @@ namespace WindowsFormsApplication1
         }
     }
 
-    public class HomeGrammar
-    {
-        private static readonly Dictionary<string, ElementType> ElementTypes = GetElementTypes();
-        private readonly List<Rule> rules;
-        private readonly ElementType startElementType;
-
-        public HomeGrammar()
-        {
-            startElementType = new ElementType("cat");
-
-            rules = new List<Rule>
-            {
-                new LeftRule(ElementTypes["ear"], ElementTypes["a3"], ElementTypes["a4"]),
-                new LeftRule(ElementTypes["ears"], ElementTypes["ear"], ElementTypes["ear"]),
-                new LeftRule(ElementTypes["parallel"], ElementTypes["a4"], ElementTypes["a3"]),
-                new UpRule(ElementTypes["square"], ElementTypes["ear"], ElementTypes["parallel"]),
-                new UpRule(ElementTypes["eye"], ElementTypes["ear"], ElementTypes["a1"]),
-                new LeftRule(ElementTypes["eyes"], ElementTypes["eye"], ElementTypes["eye"]),
-                new UpRule(ElementTypes["eyesAndMouse"], ElementTypes["eyes"], ElementTypes["a1"]),
-                new InsideRule(ElementTypes["fase"], ElementTypes["eyesAndMouse"],ElementTypes["square"] ),
-                new UpRule(startElementType, ElementTypes["ears"], ElementTypes["fase"]),
-            };
-        }
-
-        private static Dictionary<string, ElementType> GetElementTypes()
-        {
-            return new Dictionary<string, ElementType>
-            {
-                {"a1", new TerminalElementType("a1", new Line(new Point(0, 0), new Point(10, 0)))},
-                {"a2", new TerminalElementType("a2", new Line(new Point(0, 0), new Point(0, 10)))},
-                {"a3", new TerminalElementType("a3", new Line(new Point(0, 0), new Point(10, 10)))},
-                {"a4", new TerminalElementType("a4", new Line(new Point(10, 0), new Point(0, 10)))},
-                {"ear", new ElementType("ear")},
-                {"ears", new ElementType("ears")},
-                {"parallel", new ElementType("parallel")},
-                {"square", new ElementType("square")},
-                {"eyes", new ElementType("eyes")},
-                {"eye", new ElementType("eye")},
-                {"eyesAndMouse", new ElementType("eyesAndMouse")},
-                {"fase", new ElementType("fase")},
-            };
-        }
-
-        public Element GetHome()
-        {
-            return GetElement(startElementType);
-        }
-
-        private Element GetElement(ElementType elementType)
-        {
-            var terminalElementType = elementType as TerminalElementType;
-            
-            if (terminalElementType != null)
-                return terminalElementType.StandartElement;
-
-            Rule rule = rules.FirstOrDefault(x => x.StartElementType.Name == elementType.Name);
-            
-            return rule.TransformConnect(GetElement(rule.FirstArgumentType),
-                GetElement(rule.SecondArgumentType));
-        }
-
-        public RecognazingResult IsHome(IEnumerable<Element> baseElements)
-        {
-            var elements = new ConcurrentBag<Element>(baseElements);
-            
-            for (int i = 0; i < rules.Count; i++)
-            {
-                ContainRuleAgrumentsResult result = ContainRuleAgruments(elements, rules[i]);
-                elements = result.Elements;
-                if (!result.IsElementFound)
-                    return new RecognazingResult(rules[i].StartElementType.Name, false);
-            }
-
-            return new RecognazingResult("", true);
-        }
-
-        private static ContainRuleAgrumentsResult ContainRuleAgruments(
-            ConcurrentBag<Element> elements, Rule rule)
-        {
-            var result = new ContainRuleAgrumentsResult
-            {
-                Elements = new ConcurrentBag<Element>(elements),
-                IsElementFound = false
-            };
-
-            foreach (Element firstElement in elements)
-                if (firstElement.ElementType.Name == rule.FirstArgumentType.Name)
-                    result = ContainRuleAgrumentsForFirstElement(elements, rule, firstElement, result);
-            
-            return result;
-        }
-
-        private static ContainRuleAgrumentsResult ContainRuleAgrumentsForFirstElement(
-            IEnumerable<Element> elements, Rule rule,
-            Element firstElement, ContainRuleAgrumentsResult result)
-        {
-            Element element = firstElement;
-            Parallel.ForEach(elements, (Element secondElement) =>
-            {
-                if (rule.IsRulePare(element, secondElement))
-                {
-                    result.Elements.Add(rule.Connect(element, secondElement));
-                    result.IsElementFound = true;
-                }
-            });
-
-            return result;
-        }
-
-        public static Element GetTerminalElement(Line line)
-        {
-            String resultName = GetTerminalElementName(line);
-            return new Element(ElementTypes[resultName], line);
-        }
-
-        private static string GetTerminalElementName(Line line)
-        {
-            double deltaX = line.From.X - line.To.X;
-            double deltaY = line.From.Y - line.To.Y;
-
-            if (Math.Abs(deltaY) < 1) 
-                return "a1";
-            if (Math.Abs(deltaX) < 1) 
-                return "a2";
-            if (Math.Abs(deltaX) < 1) 
-                return "a2";
-            if (Math.Abs(deltaX / deltaY) < 0.2) 
-                return "a2";
-            if (Math.Abs(deltaY / deltaX) < 0.2) 
-                return "a1";
-
-            Point highPoint;
-            if (line.To.Y > line.From.Y)
-                highPoint = line.To;
-            else
-                highPoint = line.From;
-
-            Point lowPoint;
-            if (line.To.Y < line.From.Y)
-                lowPoint = line.To;
-            else
-                lowPoint = line.From;
-
-            if (highPoint.X < lowPoint.X) 
-                return "a4";
-            
-            return "a3";
-        }
-
-        private class ContainRuleAgrumentsResult
-        {
-            public ConcurrentBag<Element> Elements { get; set; }
-            public bool IsElementFound { get; set; }
-        }
-    }
-
     public abstract class Rule
     {
-        protected Rule(ElementType startElementType, ElementType firstArgumentType,
-            ElementType secondArgumentType)
+        protected Rule(Type startElementType, Type firstArgumentType, Type secondArgumentType)
         {
             SecondArgumentType = secondArgumentType;
             FirstArgumentType = firstArgumentType;
@@ -315,26 +152,26 @@ namespace WindowsFormsApplication1
         }
 
         protected Random Random { get; private set; }
-        public ElementType StartElementType { get; private set; }
-        public ElementType FirstArgumentType { get; private set; }
-        public ElementType SecondArgumentType { get; private set; }
+        public Type StartElementType { get; private set; }
+        public Type FirstArgumentType { get; private set; }
+        public Type SecondArgumentType { get; private set; }
 
-        public abstract Element TransformConnect(Element first, Element second);
-        public abstract Element Connect(Element first, Element second);
-        public abstract bool IsRulePare(Element first, Element second);
+        public abstract Objects TransformConnect(Objects first, Objects second);
+        public abstract Objects Connect(Objects first, Objects second);
+        public abstract bool IsRulePare(Objects first, Objects second);
     }
 
     public class InsideRule : Rule
     {
         private const int randomDelta = 3;
 
-        public InsideRule(ElementType startElementType, ElementType firstArgumentType,
-            ElementType secondArgumentType) : base(startElementType, firstArgumentType, secondArgumentType) { }
+        public InsideRule(Type startElementType, Type firstArgumentType,
+            Type secondArgumentType) : base(startElementType, firstArgumentType, secondArgumentType) { }
 
-        public override Element TransformConnect(Element first, Element second)
+        public override Objects TransformConnect(Objects first, Objects second)
         {
-            second.ScaleTransform(first.Length / second.Length + 0.8, first.Height / second.Height + 0.8);
-            first.ShiftTransform(
+            second.Scale(first.Length / second.Length + 0.8, first.Height / second.Height + 0.8);
+            first.Shift(
                 second.StartPosition.X +
                 Random.Next((int)(Math.Abs(first.Length - second.Length) * 0.5), (int)(Math.Abs(first.Length - second.Length) * 0.8)) -
                 first.StartPosition.X,
@@ -346,22 +183,22 @@ namespace WindowsFormsApplication1
             return Connect(first, second);
         }
 
-        public override Element Connect(Element first, Element second)
+        public override Objects Connect(Objects first, Objects second)
         {
             var resultLines = new List<Line>(first.Lines);
             
             resultLines.AddRange(second.Lines);
             
-            var connect = new Element(StartElementType, resultLines, second.StartPosition,
+            var connect = new Objects(StartElementType, resultLines, second.StartPosition,
                 second.EndPosition);
             
             return connect;
         }
 
-        public override bool IsRulePare(Element first, Element second)
+        public override bool IsRulePare(Objects first, Objects second)
         {
-            if (first.ElementType.Name != FirstArgumentType.Name ||
-                second.ElementType.Name != SecondArgumentType.Name) 
+            if (first.Type.Name != FirstArgumentType.Name ||
+                second.Type.Name != SecondArgumentType.Name) 
                 return false;
 
             return first.StartPosition.X > second.StartPosition.X - randomDelta &&
@@ -375,16 +212,16 @@ namespace WindowsFormsApplication1
     {
         private const int randomDelta = 3;
 
-        public LeftRule(ElementType startElementType, ElementType firstArgumentType,
-            ElementType secondArgumentType) : base(startElementType, firstArgumentType, secondArgumentType) { }
+        public LeftRule(Type startElementType, Type firstArgumentType,
+            Type secondArgumentType) : base(startElementType, firstArgumentType, secondArgumentType) { }
 
-        public override Element TransformConnect(Element first, Element second)
+        public override Objects TransformConnect(Objects first, Objects second)
         {
-            second.ShiftTransform(first.Length + Random.Next(1, 10), 0);
+            second.Shift(first.Length + Random.Next(1, 10), 0);
             return Connect(first, second);
         }
 
-        public override Element Connect(Element first, Element second)
+        public override Objects Connect(Objects first, Objects second)
         {
             var resultLines = new List<Line>(first.Lines);
             
@@ -394,15 +231,15 @@ namespace WindowsFormsApplication1
                 Math.Max(first.StartPosition.Y, second.StartPosition.Y));
             var endPosition = new Point(second.EndPosition.X,
                 Math.Min(first.EndPosition.Y, second.EndPosition.Y));
-            var connect = new Element(StartElementType, resultLines, startPosition, endPosition);
+            var connect = new Objects(StartElementType, resultLines, startPosition, endPosition);
             
             return connect;
         }
 
-        public override bool IsRulePare(Element first, Element second)
+        public override bool IsRulePare(Objects first, Objects second)
         {
-            if (first.ElementType.Name != FirstArgumentType.Name ||
-                second.ElementType.Name != SecondArgumentType.Name) 
+            if (first.Type.Name != FirstArgumentType.Name ||
+                second.Type.Name != SecondArgumentType.Name) 
                 return false;
 
             return first.EndPosition.X - randomDelta < second.StartPosition.X;
@@ -413,62 +250,206 @@ namespace WindowsFormsApplication1
     {
         private const int randomDelta = 3;
 
-        public UpRule(ElementType startElementType, ElementType firstArgumentType,
-            ElementType secondArgumentType)
+        public UpRule(Type startElementType, Type firstArgumentType, Type secondArgumentType)
             : base(startElementType, firstArgumentType, secondArgumentType) { }
 
-        public override Element TransformConnect(Element first, Element second)
+        public override Objects TransformConnect(Objects first, Objects second)
         {
             MakeSameLength(first, second);
-            first.ShiftTransform(0, second.StartPosition.Y + Random.Next(0, 3));
+            first.Shift(0, second.StartPosition.Y + Random.Next(0, 3));
 
             return Connect(first, second);
         }
 
-        public override Element Connect(Element first, Element second)
+        public override Objects Connect(Objects first, Objects second)
         {
             var resultLines = new List<Line>(first.Lines);
 
             resultLines.AddRange(second.Lines);
 
-            var connect = new Element(StartElementType, resultLines, first.StartPosition,
+            var connect = new Objects(StartElementType, resultLines, first.StartPosition,
                 second.EndPosition);
 
             return connect;
         }
-
-        private static void MakeSameLength(Element first, Element second)
+        private static void MakeSameLength(Objects first, Objects second)
         {
-            Element largestElement = GetLargestElement(first, second);
-            Element shortestElement = GetShortestElement(first, second);
+            Objects largestElement = GetLargestElement(first, second);
+            Objects shortestElement = GetShortestElement(first, second);
 
-            shortestElement.ScaleTransform(largestElement.Length / shortestElement.Length, 1.0);
+            shortestElement.Scale(largestElement.Length / shortestElement.Length, 1.0);
         }
-
-        private static Element GetLargestElement(Element first, Element second)
+        private static Objects GetLargestElement(Objects first, Objects second)
         {
             if (first.Length > second.Length)
                 return first;
             else
                 return second;
         }
-
-        private static Element GetShortestElement(Element first, Element second)
+        private static Objects GetShortestElement(Objects first, Objects second)
         {
             if (first.Length < second.Length)
                 return first;
             else
                 return second;
         }
-
-        public override bool IsRulePare(Element first, Element second)
+        public override bool IsRulePare(Objects first, Objects second)
         {
-            if (first.ElementType.Name != FirstArgumentType.Name ||
-                second.ElementType.Name != SecondArgumentType.Name)
+            if (first.Type.Name != FirstArgumentType.Name ||
+                second.Type.Name != SecondArgumentType.Name)
                 return false;
 
             return second.StartPosition.Y - randomDelta < first.EndPosition.Y;
         }
+    }
+
+    public class Grammar
+    {
+        private static readonly Dictionary<string, Type> ElementTypes = GetElementTypes();
+        private readonly List<Rule> rules;
+        private readonly Type startElementType;
+
+        public Grammar()
+        {
+            startElementType = new Type("face");
+
+            rules = new List<Rule>
+            {
+                new LeftRule(ElementTypes["ear"], ElementTypes["a3"], ElementTypes["a4"]),
+                new LeftRule(ElementTypes["ears"], ElementTypes["ear"], ElementTypes["ear"]),
+                new LeftRule(ElementTypes["parallel"], ElementTypes["a4"], ElementTypes["a3"]),
+                new UpRule(ElementTypes["square"], ElementTypes["ear"], ElementTypes["parallel"]),
+                new UpRule(ElementTypes["eye"], ElementTypes["ear"], ElementTypes["a1"]),
+                new LeftRule(ElementTypes["eyes"], ElementTypes["eye"], ElementTypes["eye"]),
+                new UpRule(ElementTypes["eyesAndMouth"], ElementTypes["eyes"], ElementTypes["a1"]),
+                new InsideRule(ElementTypes["head"], ElementTypes["eyesAndMouth"],ElementTypes["square"] ),
+                new UpRule(startElementType, ElementTypes["ears"], ElementTypes["head"]),
+            };
+        }
+
+        private static Dictionary<string, Type> GetElementTypes()
+        {
+            return new Dictionary<string, Type>
+            {
+                {"a1", new TypeOfObjects("a1", new Line(new Point(0, 0), new Point(10, 0)))},
+                {"a2", new TypeOfObjects("a2", new Line(new Point(0, 0), new Point(0, 10)))},
+                {"a3", new TypeOfObjects("a3", new Line(new Point(0, 0), new Point(10, 10)))},
+                {"a4", new TypeOfObjects("a4", new Line(new Point(10, 0), new Point(0, 10)))},
+                {"ear", new Type("ear")},
+                {"ears", new Type("ears")},
+                {"parallel", new Type("parallel")},
+                {"square", new Type("square")},
+                {"eyes", new Type("eyes")},
+                {"eye", new Type("eye")},
+                {"eyesAndMouth", new Type("eyesAndMouth")},
+                {"head", new Type("head")},
+            };
+        }
+
+        public Objects GetGrammar()
+        {
+            return GetElement(startElementType);
+        }
+        private Objects GetElement(Type elementType)
+        {
+            var terminalElementType = elementType as TypeOfObjects;
+
+            if (terminalElementType != null)
+                return terminalElementType.Default;
+
+            Rule rule = rules.FirstOrDefault(x => x.StartElementType.Name == elementType.Name);
+
+            return rule.TransformConnect(GetElement(rule.FirstArgumentType),
+                GetElement(rule.SecondArgumentType));
+        }
+        public RecognazingResult IsAtGrammar(IEnumerable<Objects> baseElements)
+        {
+            var elements = new ConcurrentBag<Objects>(baseElements);
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                ContainRuleAgrumentsResult result = ContainRuleAgruments(elements, rules[i]);
+                elements = result.Elements;
+                if (!result.IsElementFound)
+                    return new RecognazingResult(rules[i].StartElementType.Name, false);
+            }
+
+            return new RecognazingResult("", true);
+        }
+
+        private static ContainRuleAgrumentsResult ContainRuleAgruments(ConcurrentBag<Objects> elements, Rule rule)
+        {
+            var result = new ContainRuleAgrumentsResult
+            {
+                Elements = new ConcurrentBag<Objects>(elements),
+                IsElementFound = false
+            };
+
+            foreach (Objects firstElement in elements)
+                if (firstElement.Type.Name == rule.FirstArgumentType.Name)
+                    result = ContainRuleAgrumentsForFirstElement(elements, rule, firstElement, result);
+
+            return result;
+        }
+        private static ContainRuleAgrumentsResult ContainRuleAgrumentsForFirstElement(IEnumerable<Objects> elements, Rule rule, Objects firstElement, ContainRuleAgrumentsResult result)
+        {
+            Objects element = firstElement;
+            Parallel.ForEach(elements, (Objects secondElement) =>
+            {
+                if (rule.IsRulePare(element, secondElement))
+                {
+                    result.Elements.Add(rule.Connect(element, secondElement));
+                    result.IsElementFound = true;
+                }
+            });
+
+            return result;
+        }
+
+        public static Objects GetTerminalElement(Line line)
+        {
+            String resultName = GetTerminalElementName(line);
+            return new Objects(ElementTypes[resultName], line);
+        }
+        private static string GetTerminalElementName(Line line)
+        {
+            double deltaX = line.Start.X - line.Finish.X;
+            double deltaY = line.Start.Y - line.Finish.Y;
+
+            if (Math.Abs(deltaY) < 1)
+                return "a1";
+            if (Math.Abs(deltaX) < 1)
+                return "a2";
+            if (Math.Abs(deltaX) < 1)
+                return "a2";
+            if (Math.Abs(deltaX / deltaY) < 0.2)
+                return "a2";
+            if (Math.Abs(deltaY / deltaX) < 0.2)
+                return "a1";
+
+            Point highPoint;
+            if (line.Finish.Y > line.Start.Y)
+                highPoint = line.Finish;
+            else
+                highPoint = line.Start;
+
+            Point lowPoint;
+            if (line.Finish.Y < line.Start.Y)
+                lowPoint = line.Finish;
+            else
+                lowPoint = line.Start;
+
+            if (highPoint.X < lowPoint.X)
+                return "a4";
+
+            return "a3";
+        }  
+    }
+
+    public class ContainRuleAgrumentsResult
+    {
+        public ConcurrentBag<Objects> Elements { get; set; }
+        public bool IsElementFound { get; set; }
     }
 
     public class RecognazingResult
